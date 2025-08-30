@@ -1,52 +1,36 @@
 package main
 
-import(
-	"github.com/gorilla/websocket"
+import (
 	"fmt"
 	"log"
-	"net/http"
+
+	libp2p "github.com/libp2p/go-libp2p"
+	relayv2 "github.com/libp2p/go-libp2p/p2p/protocol/circuitv2/relay"
 )
 
-var upgrader = websocket.Upgrader{}
-
-var peers = make(map[string]*websocket.Conn)
-
-func handleConn(w http.ResponseWriter, r *http.Request) {
-	conn, err := upgrader.Upgrade(w, r, nil)
-	if err != nil {
-		log.Println("Upgrade error:", err)
-		return
-	}
-	defer conn.Close()
-
-	var peerID string
-	// First message from peer is its ID
-	err = conn.ReadJSON(&peerID)
-	if err != nil {
-		log.Println("PeerID error:", err)
-		return
-	}
-	peers[peerID] = conn
-	fmt.Println("Peer connected:", peerID)
-
-	for {
-		var msg map[string]string
-		err := conn.ReadJSON(&msg)
-		if err != nil {
-			log.Println("Read error:", err)
-			break
-		}
-
-		// relay message to target peer
-		target := msg["to"]
-		if targetConn, ok := peers[target]; ok {
-			targetConn.WriteJSON(msg)
-		}
-	}
-}
-
 func main() {
-	http.HandleFunc("/ws", handleConn)
-	log.Println("Relay server running on :8080")
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	// ctx := context.Background()
+
+	// Create a new libp2p host that acts as a relay
+	host, err := libp2p.New(
+		libp2p.EnableRelay(), // Enable relay on this host
+	)
+	if err != nil {
+		log.Fatalf("Failed to create relay host: %v", err)
+	}
+
+	// Start the relay service
+	_, err = relayv2.New(host)
+	if err != nil {
+		log.Fatalf("Failed to start relay service: %v", err)
+	}
+
+	fmt.Println("🚀 Relay server is running!")
+	fmt.Println("Peer ID:", host.ID())
+	fmt.Println("Multiaddresses:")
+	for _, addr := range host.Addrs() {
+		fmt.Printf(" - %s/p2p/%s\n", addr, host.ID())
+	}
+
+	select {} // keep running
 }

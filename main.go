@@ -1,49 +1,42 @@
 package main
 
 import (
+	"context"
 	"fmt"
-	"net/http"
+	"log"
 
-	"github.com/gorilla/websocket"
+	libp2p "github.com/libp2p/go-libp2p"
+	relayv2 "github.com/libp2p/go-libp2p/p2p/protocol/circuitv2/relay"
+	ma "github.com/multiformats/go-multiaddr"
 )
 
-// Upgrader is used to upgrade HTTP connections to WebSocket connections.
-var upgrader = websocket.Upgrader{
-	CheckOrigin: func(r *http.Request) bool {
-		return true
-	},
-}
-
-func wsHandler(w http.ResponseWriter, r *http.Request) {
-	// Upgrade the HTTP connection to a WebSocket connection
-	conn, err := upgrader.Upgrade(w, r, nil)
-	if err != nil {
-		fmt.Println("Error upgrading:", err)
-		return
-	}
-	defer conn.Close()
-	// Listen for incoming messages
-	for {
-		// Read message from the client
-		_, message, err := conn.ReadMessage()
-		if err != nil {
-			fmt.Println("Error reading message:", err)
-			break
-		}
-		fmt.Printf("Received: %s\\n", message)
-		// Echo the message back to the client
-		if err := conn.WriteMessage(websocket.TextMessage, message); err != nil {
-			fmt.Println("Error writing message:", err)
-			break
-		}
-	}
-}
-
 func main() {
-	http.HandleFunc("/ws", wsHandler)
-	fmt.Println("WebSocket server started on :8080")
-	err := http.ListenAndServe(":10000", nil)
+	ctx := context.Background()
+
+	// Start a libp2p host
+	h, err := libp2p.New(
+		libp2p.ListenAddrStrings(
+			// WebSocket secure transport on 0.0.0.0:443
+			"/ip4/0.0.0.0/tcp/10000/wss",
+		),
+	)
 	if err != nil {
-		fmt.Println("Error starting server:", err)
+		log.Fatal(err)
 	}
+
+	// Enable relay v2 on this host
+	_, err = relayv2.New(h)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println("Relay node started 🚀")
+	fmt.Println("Peer ID:", h.ID())
+
+	// Print out relay’s multiaddresses
+	for _, addr := range h.Addrs() {
+		fmt.Println(" - ", addr.Encapsulate(ma.StringCast(fmt.Sprintf("/p2p/%s", h.ID()))))
+	}
+
+	<-ctx.Done()
 }

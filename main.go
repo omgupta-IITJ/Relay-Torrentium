@@ -2,35 +2,48 @@ package main
 
 import (
 	"fmt"
-	"log"
+	"net/http"
 
-	libp2p "github.com/libp2p/go-libp2p"
-	relayv2 "github.com/libp2p/go-libp2p/p2p/protocol/circuitv2/relay"
+	"github.com/gorilla/websocket"
 )
 
+// Upgrader is used to upgrade HTTP connections to WebSocket connections.
+var upgrader = websocket.Upgrader{
+	CheckOrigin: func(r *http.Request) bool {
+		return true
+	},
+}
+
+func wsHandler(w http.ResponseWriter, r *http.Request) {
+	// Upgrade the HTTP connection to a WebSocket connection
+	conn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		fmt.Println("Error upgrading:", err)
+		return
+	}
+	defer conn.Close()
+	// Listen for incoming messages
+	for {
+		// Read message from the client
+		_, message, err := conn.ReadMessage()
+		if err != nil {
+			fmt.Println("Error reading message:", err)
+			break
+		}
+		fmt.Printf("Received: %s\\n", message)
+		// Echo the message back to the client
+		if err := conn.WriteMessage(websocket.TextMessage, message); err != nil {
+			fmt.Println("Error writing message:", err)
+			break
+		}
+	}
+}
+
 func main() {
-	// ctx := context.Background()
-
-	// Create a new libp2p host that acts as a relay
-	host, err := libp2p.New(
-		libp2p.EnableRelay(), // Enable relay on this host
-	)
+	http.HandleFunc("/ws", wsHandler)
+	fmt.Println("WebSocket server started on :8080")
+	err := http.ListenAndServe(":10000", nil)
 	if err != nil {
-		log.Fatalf("Failed to create relay host: %v", err)
+		fmt.Println("Error starting server:", err)
 	}
-
-	// Start the relay service
-	_, err = relayv2.New(host)
-	if err != nil {
-		log.Fatalf("Failed to start relay service: %v", err)
-	}
-
-	fmt.Println("🚀 Relay server is running!")
-	fmt.Println("Peer ID:", host.ID())
-	fmt.Println("Multiaddresses:")
-	for _, addr := range host.Addrs() {
-		fmt.Printf(" - %s/p2p/%s\n", addr, host.ID())
-	}
-
-	select {} // keep running
 }

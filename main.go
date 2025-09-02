@@ -12,7 +12,7 @@ import (
 
 func main() {
 	h, err := libp2p.New(
-		libp2p.ListenAddrStrings("/ip4/0.0.0.0/tcp/443/wss"),
+		libp2p.ListenAddrStrings("/ip4/0.0.0.0/tcp/443/ws"),
 		libp2p.Security(noise.ID, noise.New),
 		libp2p.Transport(ws.New),
 	)

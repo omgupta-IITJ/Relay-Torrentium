@@ -5,6 +5,7 @@ import (
 	"log"
 
 	libp2p "github.com/libp2p/go-libp2p"
+	relayv2 "github.com/libp2p/go-libp2p/p2p/protocol/circuitv2/relay"
 	noise "github.com/libp2p/go-libp2p/p2p/security/noise"
 	ws "github.com/libp2p/go-libp2p/p2p/transport/websocket"
 )
@@ -12,16 +13,21 @@ import (
 func main() {
 	log.Println("🚀 Starting libp2p node setup...")
 	h, err := libp2p.New(
-		libp2p.ListenAddrStrings("/ip4/0.0.0.0/tcp/443/ws"),
+		libp2p.ListenAddrStrings("/ip4/127.0.0.1/tcp/443/ws"),
 		libp2p.Security(noise.ID, noise.New),
 		libp2p.Transport(ws.New),
 	)
 
 	if err != nil {
-		log.Fatalf("❌ Failed to create libp2p host: %v", err)
+		log.Fatalf(" Failed to create libp2p host: %v", err)
 	}
 
-	log.Println("✅ libp2p host created successfully.")
+	_, err = relayv2.New(h)
+	if err != nil {
+		log.Fatalf("failed to enbale relay: %v", err)
+	}
+
+	log.Println("libp2p host created successfully.")
 	log.Printf("🆔 Peer ID: %s\n", h.ID().String())
 
 	log.Println("📡 Listening on addresses:")
@@ -33,5 +39,5 @@ func main() {
 
 	log.Println("⏳ Node is running... Press Ctrl+C to exit.")
 
-	select {}
+	select {} // or either use for{} so dont exit the program
 }

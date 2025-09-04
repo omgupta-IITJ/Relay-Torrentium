@@ -13,7 +13,7 @@ import (
 func main() {
 	log.Println("🚀 Starting libp2p node setup...")
 	h, err := libp2p.New(
-		libp2p.ListenAddrStrings("/ip4/127.0.0.1/tcp/443/ws"),
+		libp2p.ListenAddrStrings("/ip4/0.0.0.0/tcp/443/ws"),
 		libp2p.Security(noise.ID, noise.New),
 		libp2p.Transport(ws.New),
 	)

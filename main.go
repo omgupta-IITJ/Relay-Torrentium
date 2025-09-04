@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"strings"
 
 	libp2p "github.com/libp2p/go-libp2p"
 	noise "github.com/libp2p/go-libp2p/p2p/security/noise"
@@ -17,8 +16,8 @@ func main() {
 
 	// Render provides external URL like: https://your-app.onrender.com
 	publicDNS := os.Getenv("RENDER_EXTERNAL_URL")
-	publicDNS = strings.TrimPrefix(publicDNS, "https://")
-	publicDNS = strings.TrimSuffix(publicDNS, "/")
+	// publicDNS = strings.TrimPrefix(publicDNS, "https://")
+	// publicDNS = strings.TrimSuffix(publicDNS, "/")
 
 	port := os.Getenv("PORT")
 	if port == "" {

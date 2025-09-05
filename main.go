@@ -6,11 +6,47 @@ import (
 	"os"
 
 	libp2p "github.com/libp2p/go-libp2p"
+	"github.com/libp2p/go-libp2p/core/network"
 	relayv2 "github.com/libp2p/go-libp2p/p2p/protocol/circuitv2/relay"
 	noise "github.com/libp2p/go-libp2p/p2p/security/noise"
 	ws "github.com/libp2p/go-libp2p/p2p/transport/websocket"
 	ma "github.com/multiformats/go-multiaddr"
 )
+
+type NotifyBundle struct{}
+
+// if relay start listening on multiaddr
+func (nb *NotifyBundle) Listen(n network.Network, a ma.Multiaddr) {
+	log.Printf("[notifiee] Listen: %s\n", a)
+}
+
+// if relay stops listening on multiaddr
+func (nb *NotifyBundle) ListenClose(n network.Network, a ma.Multiaddr) {
+	log.Printf("[notifiee] ListenClose: %s\n", a)
+}
+
+// if someone connects on this multiaddr
+func (nb *NotifyBundle) Connected(n network.Network, c network.Conn) {
+	log.Printf("[notifiee] Connected: %s <-> %s  peer=%s\n",
+		c.LocalMultiaddr(), c.RemoteMultiaddr(), c.RemotePeer().String())
+}
+
+func (nb *NotifyBundle) Disconnected(n network.Network, c network.Conn) {
+	log.Printf("[notifiee] Disconnected: %s <-> %s  peer=%s\n",
+		c.LocalMultiaddr(), c.RemoteMultiaddr(), c.RemotePeer().String())
+}
+
+// OpenedStream is called when a stream is opened on a connection
+func (nb *NotifyBundle) OpenedStream(net network.Network, stream network.Stream) {
+	log.Printf("[notifiee] OpenedStream: from=%s to=%s protocol=%s\n",
+		stream.Conn().LocalPeer().String(), stream.Conn().RemotePeer().String(), stream.Protocol())
+}
+
+// ClosedStream is called when a stream is closed
+func (nb *NotifyBundle) ClosedStream(net network.Network, stream network.Stream) {
+	log.Printf("[notifiee] ClosedStream: from=%s to=%s protocol=%s\n",
+		stream.Conn().LocalPeer().String(), stream.Conn().RemotePeer().String(), stream.Protocol())
+}
 
 func main() {
 	log.Println("🚀 Starting libp2p relay...")
@@ -47,6 +83,9 @@ func main() {
 	if err != nil {
 		log.Fatalf("❌ Failed to enable relay v2: %v", err)
 	}
+
+	// Register the notifiee so we get connection/stream events
+	h.Network().Notify(&NotifyBundle{})
 
 	log.Println("✅ Relay started successfully")
 	log.Printf("🆔 Peer ID: %s", h.ID())

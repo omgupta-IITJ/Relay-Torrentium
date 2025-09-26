@@ -49,12 +49,9 @@ func (nb *NotifyBundle) ClosedStream(net network.Network, stream network.Stream)
 }
 
 func main() {
-	log.Println("🚀 Starting libp2p relay...")
+	log.Println(" Starting libp2p relay...")
 
-	// Render provides external URL like: https://your-app.onrender.com
 	publicDNS := os.Getenv("RENDER_EXTERNAL_URL")
-	// publicDNS = strings.TrimPrefix(publicDNS, "https://")
-	// publicDNS = strings.TrimSuffix(publicDNS, "/")
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -78,20 +75,20 @@ func main() {
 		log.Fatalf("❌ Failed to create libp2p host: %v", err)
 	}
 
-	// ✅ Enable relay v2 service
+	// Enable relay v2 service
 	_, err = relayv2.New(h)
 	if err != nil {
-		log.Fatalf("❌ Failed to enable relay v2: %v", err)
+		log.Fatalf(" Failed to enable relay v2: %v", err)
 	}
 
 	// Register the notifiee so we get connection/stream events
 	h.Network().Notify(&NotifyBundle{})
 
-	log.Println("✅ Relay started successfully")
-	log.Printf("🆔 Peer ID: %s", h.ID())
+	log.Println("Relay started successfully")
+	log.Printf(" Peer ID: %s", h.ID())
 
 	for _, addr := range h.Addrs() {
-		log.Printf("📡 Listening on: %s/p2p/%s", addr, h.ID())
+		log.Printf(" Listening on: %s/p2p/%s", addr, h.ID())
 	}
 
 	select {}

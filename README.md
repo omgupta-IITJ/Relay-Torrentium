@@ -37,3 +37,29 @@ crypto.PrivKey = same key, but in a wrapper that libp2p understands and can oper
 **Marshal** = “marshal” means to convert a data structure into a format that can be stored or transmitted.
 
 Marshal → DER → crypto.UnmarshalRsaPrivateKey is necessary to convert your standard RSA key into libp2p’s crypto.PrivKey
+
+**🔑 1. RSA**
+
+Type: Asymmetric crypto based on factoring large prime numbers.
+Key Size: Typically 2048–4096 bits.
+Operations:
+Encryption/decryption
+Digital signatures
+Performance:
+Relatively slow (big numbers, modular arithmetic).
+Larger keys → more memory + network overhead.
+Security level: 2048-bit RSA ≈ 112-bit security (modern minimum).
+Libp2p impact: Generates Peer IDs starting with Qm... (legacy multihash style).
+
+**2. Ed25519**
+
+Type: Elliptic Curve Cryptography (ECC), based on Curve25519.
+Key Size: 256 bits (much smaller).
+Operations:
+Only for signatures (not direct encryption).
+Very fast signing + verification.
+Performance:
+Extremely fast and compact.
+Tiny keys (32-byte private, 32-byte public).
+Security level: ≈ 128-bit security (stronger than RSA-2048).
+Libp2p impact: Generates Peer IDs like 12D3Koo... (default, modern format).

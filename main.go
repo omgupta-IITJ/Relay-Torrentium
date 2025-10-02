@@ -18,49 +18,48 @@ import (
 	// priv "privkey/privkey"
 )
 
-func loadandgenratepriv() crypto.PrivKey {
-	// generating a new RSA private key of 2048 bits
-	const pemFile = "ed25519_key.pem"
+func loadOrGenerateEd25519() crypto.PrivKey {
+	const pemFile = "ed25519_key.bin"
+
+	// check if file exists
 	if _, err := os.Stat(pemFile); err == nil {
 		data, err := os.ReadFile(pemFile)
 		if err != nil {
-			log.Println("couldnt read the file", err)
+			log.Fatalf("Failed to read PEM file: %v", err)
 		}
-		block, _ := pem.Decode(data)
-		if block == nil {
-			log.Printf("pemfile not decoded")
-		}
-		privkey, err := crypto.UnmarshalEd25519PrivateKey(block.Bytes)
+		priv, err := crypto.UnmarshalPrivateKey(data)
 		if err != nil {
-			log.Fatalf("Failed to parse RSA private key: %v", err)
+			log.Fatalf("Failed to parse Ed25519 private key: %v", err)
 		}
-
-		return privkey
+		return priv
 	}
+
+	// generate new Ed25519 key
 	priv, _, err := crypto.GenerateEd25519Key(rand.Reader)
 	if err != nil {
-		log.Printf("error in creating rsa private key: %v", err)
+		log.Fatalf("Failed to generate Ed25519 key: %v", err)
 	}
-	// encoding private key to PEM format
-	// header label of PEM file that will appear in file
+
+	// marshal private key to bytes
 	privBytes, err := crypto.MarshalPrivateKey(priv)
 	if err != nil {
 		log.Fatalf("Failed to marshal private key: %v", err)
 	}
 
-	privateKeyPEM := &pem.Block{
+	// save to PEM
+	pemBlock := &pem.Block{
 		Type:  "ED25519 PRIVATE KEY",
 		Bytes: privBytes,
 	}
-
-	privateKeyFile, err := os.Create(pemFile)
+	file, err := os.Create(pemFile)
 	if err != nil {
-		log.Println("Error creating private key file:", err)
+		log.Fatalf("Failed to create PEM file: %v", err)
 	}
-	defer privateKeyFile.Close()
+	defer file.Close()
+	if err := pem.Encode(file, pemBlock); err != nil {
+		log.Fatalf("Failed to encode PEM: %v", err)
+	}
 
-	pem.Encode(privateKeyFile, privateKeyPEM)
-	privateKeyFile.Close()
 	return priv
 }
 
@@ -114,7 +113,7 @@ func main() {
 		port = "443"
 	}
 
-	priv := loadandgenratepriv()
+	priv := loadOrGenerateEd25519()
 
 	// using DER(DISTINGUISHED ENCODING RULES) FOR RSA->crypto
 	// Convert to PKCS1 DER bytes

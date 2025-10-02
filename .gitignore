@@ -1,2 +1,2 @@
 .env
-private_key.pem
+ed25519_key.pem

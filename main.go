@@ -2,8 +2,6 @@ package main
 
 import (
 	"crypto/rand"
-	"crypto/rsa"
-	"crypto/x509"
 	"encoding/pem"
 	"fmt"
 	"log"
@@ -20,11 +18,9 @@ import (
 	// priv "privkey/privkey"
 )
 
-func loadandgenratepriv() *rsa.PrivateKey {
+func loadandgenratepriv() crypto.PrivKey {
 	// generating a new RSA private key of 2048 bits
-	const pemFile = "private_key.pem"
-
-	var privatekey *rsa.PrivateKey
+	const pemFile = "ed25519_key.pem"
 	if _, err := os.Stat(pemFile); err == nil {
 		data, err := os.ReadFile(pemFile)
 		if err != nil {
@@ -34,31 +30,38 @@ func loadandgenratepriv() *rsa.PrivateKey {
 		if block == nil {
 			log.Printf("pemfile not decoded")
 		}
-		privkey, err := x509.ParsePKCS1PrivateKey(block.Bytes)
+		privkey, err := crypto.UnmarshalEd25519PrivateKey(block.Bytes)
 		if err != nil {
 			log.Fatalf("Failed to parse RSA private key: %v", err)
 		}
 
 		return privkey
 	}
-	privatekey, err := rsa.GenerateKey(rand.Reader, 2048)
+	priv, _, err := crypto.GenerateEd25519Key(rand.Reader)
 	if err != nil {
 		log.Printf("error in creating rsa private key: %v", err)
 	}
 	// encoding private key to PEM format
 	// header label of PEM file that will appear in file
+	privBytes, err := crypto.MarshalPrivateKey(priv)
+	if err != nil {
+		log.Fatalf("Failed to marshal private key: %v", err)
+	}
+
 	privateKeyPEM := &pem.Block{
-		Type:  "RSA PRIVATE KEY",
-		Bytes: x509.MarshalPKCS1PrivateKey(privatekey),
+		Type:  "ED25519 PRIVATE KEY",
+		Bytes: privBytes,
 	}
 
 	privateKeyFile, err := os.Create(pemFile)
 	if err != nil {
 		log.Println("Error creating private key file:", err)
 	}
+	defer privateKeyFile.Close()
+
 	pem.Encode(privateKeyFile, privateKeyPEM)
 	privateKeyFile.Close()
-	return privatekey
+	return priv
 }
 
 type NotifyBundle struct{}
@@ -111,17 +114,12 @@ func main() {
 		port = "443"
 	}
 
-	privkey := loadandgenratepriv()
+	priv := loadandgenratepriv()
 
 	// using DER(DISTINGUISHED ENCODING RULES) FOR RSA->crypto
 	// Convert to PKCS1 DER bytes
-	der := x509.MarshalPKCS1PrivateKey(privkey)
 
 	// Now turn it into libp2p's crypto.PrivKey
-	priv, err := crypto.UnmarshalRsaPrivateKey(der)
-	if err != nil {
-		log.Printf("unable to convert to libp2p format %v", err)
-	}
 
 	// using a layer of noise protocol for secured connection between peer and relay
 	h, err := libp2p.New(

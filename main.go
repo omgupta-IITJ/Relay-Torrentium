@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/joho/godotenv"
 	libp2p "github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/libp2p/go-libp2p/core/network"
@@ -98,6 +99,11 @@ func (nb *NotifyBundle) ClosedStream(net network.Network, stream network.Stream)
 func main() {
 	log.Println(" Starting libp2p relay...")
 
+	err := godotenv.Load(".env")
+	if err != nil {
+		log.Println("unable to load env file", err)
+	}
+
 	publicDNS := os.Getenv("RENDER_EXTERNAL_URL")
 
 	port := os.Getenv("PORT")
@@ -144,6 +150,7 @@ func main() {
 
 	log.Println("Relay started successfully")
 	log.Printf(" Peer ID: %s", h.ID())
+	fmt.Println("public domain name system is:", publicDNS)
 
 	for _, addr := range h.Addrs() {
 		log.Printf(" Listening on: %s/p2p/%s", addr, h.ID())

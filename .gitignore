@@ -1,2 +1,2 @@
-.env/
-private_key.pem/
+.env
+private_key.pem

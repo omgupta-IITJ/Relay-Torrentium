@@ -2,7 +2,6 @@ package main
 
 import (
 	"crypto/rand"
-	"encoding/pem"
 	"fmt"
 	"log"
 	"os"
@@ -19,17 +18,17 @@ import (
 )
 
 func loadOrGenerateEd25519() crypto.PrivKey {
-	const pemFile = "ed25519_key.bin"
+	const keyFile = "ed25519_key.bin"
 
 	// check if file exists
-	if _, err := os.Stat(pemFile); err == nil {
-		data, err := os.ReadFile(pemFile)
+	if _, err := os.Stat(keyFile); err == nil {
+		data, err := os.ReadFile(keyFile)
 		if err != nil {
-			log.Fatalf("Failed to read PEM file: %v", err)
+			log.Fatalf("Failed to read key file: %v", err)
 		}
 		priv, err := crypto.UnmarshalPrivateKey(data)
 		if err != nil {
-			log.Fatalf("Failed to parse Ed25519 private key: %v", err)
+			log.Fatalf("Failed to unmarshal Ed25519 private key: %v", err)
 		}
 		return priv
 	}
@@ -46,18 +45,9 @@ func loadOrGenerateEd25519() crypto.PrivKey {
 		log.Fatalf("Failed to marshal private key: %v", err)
 	}
 
-	// save to PEM
-	pemBlock := &pem.Block{
-		Type:  "ED25519 PRIVATE KEY",
-		Bytes: privBytes,
-	}
-	file, err := os.Create(pemFile)
-	if err != nil {
-		log.Fatalf("Failed to create PEM file: %v", err)
-	}
-	defer file.Close()
-	if err := pem.Encode(file, pemBlock); err != nil {
-		log.Fatalf("Failed to encode PEM: %v", err)
+	// save raw bytes to .bin file (no PEM!)
+	if err := os.WriteFile(keyFile, privBytes, 0600); err != nil {
+		log.Fatalf("Failed to save private key: %v", err)
 	}
 
 	return priv
@@ -152,7 +142,5 @@ func main() {
 	for _, addr := range h.Addrs() {
 		log.Printf(" Listening on: %s/p2p/%s", addr, h.ID())
 	}
-
 	select {}
-
 }

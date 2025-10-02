@@ -63,3 +63,5 @@ Extremely fast and compact.
 Tiny keys (32-byte private, 32-byte public).
 Security level: ≈ 128-bit security (stronger than RSA-2048).
 Libp2p impact: Generates Peer IDs like 12D3Koo... (default, modern format).
+
+**using .bin file for ed25519_key**

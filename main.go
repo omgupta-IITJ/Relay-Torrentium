@@ -103,6 +103,8 @@ func main() {
 		port = "443"
 	}
 
+	listenAddr := fmt.Sprintf("/ip4/0.0.0.0/tcp/%s/ws", port)
+
 	priv := loadOrGenerateEd25519()
 
 	// using DER(DISTINGUISHED ENCODING RULES) FOR RSA->crypto
@@ -112,6 +114,7 @@ func main() {
 
 	// using a layer of noise protocol for secured connection between peer and relay
 	h, err := libp2p.New(
+		libp2p.ListenAddrStrings(listenAddr),
 		libp2p.Identity(priv),
 		libp2p.Security(noise.ID, noise.New),
 		libp2p.Transport(ws.New),
